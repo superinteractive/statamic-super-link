@@ -1,0 +1,27 @@
+{
+	"name": "superinteractive/statamic-super-link",
+	"autoload": {
+		"psr-4": {
+			"SuperInteractive\\SuperLink\\": "src"
+		}
+	},
+	"require": {
+		"statamic/cms": "^4.0 || ^5.0"
+	},
+	"extra": {
+		"statamic": {
+			"name": "Super Link",
+			"description": "Super Link Fieldtype for Statamic."
+		},
+		"laravel": {
+			"providers": [
+				"SuperInteractive\\SuperLink\\ServiceProvider"
+			]
+		}
+	},
+	"config": {
+		"allow-plugins": {
+			"pixelfear/composer-dist-plugin": true
+		}
+	}
+}
