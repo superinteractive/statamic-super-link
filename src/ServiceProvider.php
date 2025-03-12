@@ -4,6 +4,8 @@ namespace SuperInteractive\SuperLink;
 
 use Statamic\Providers\AddonServiceProvider;
 use SuperInteractive\SuperLink\Fieldtypes\SuperLinkFieldtype;
+use Statamic\Facades\GraphQL;
+use SuperInteractive\SuperLink\GraphQL\SuperLinkQLType;
 
 class ServiceProvider extends AddonServiceProvider
 {
@@ -21,5 +23,9 @@ class ServiceProvider extends AddonServiceProvider
 
     public function bootAddon()
     {
+        parent::bootAddon();
+
+        // Register your custom type with Statamic’s GraphQL
+        GraphQL::addType(SuperLinkQLType::class);
     }
 }

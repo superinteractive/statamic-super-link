@@ -7,6 +7,7 @@ use Statamic\Contracts\Entries\Collection;
 use Statamic\Contracts\Entries\Entry;
 use Statamic\Facades;
 use Statamic\Facades\Blink;
+use Statamic\Facades\GraphQL;
 use Statamic\Facades\Site;
 use Statamic\Fields\Field;
 use Statamic\Fields\Fieldtype;
@@ -90,7 +91,7 @@ class SuperLinkFieldtype extends Fieldtype
         $selectedAsset = $url && Str::startsWith($url, 'asset::') ? Str::after($url, 'asset::') : null;
         $mailto = $url && Str::startsWith($url, 'mailto:') ? Str::after($url, 'mailto:') : null;
         $tel = $url && Str::startsWith($url, 'tel:') ? Str::after($url, 'tel:') : null;
-        $url = ($url !== '@child' && ! $selectedEntry && ! $selectedAsset && ! $mailto && ! $tel) ? $url : null;
+        $url = ($url !== '@child' && !$selectedEntry && !$selectedAsset && !$mailto && !$tel) ? $url : null;
 
         $entryFieldtype = $this->nestedEntriesFieldtype($selectedEntry);
         $assetFieldtype = $showAssetOption ? $this->nestedAssetsFieldtype($selectedAsset) : null;
@@ -120,7 +121,7 @@ class SuperLinkFieldtype extends Fieldtype
 
     private function initialOption($value, $entry, $asset, $mailto = null, $tel = null)
     {
-        if (! $value) {
+        if (!$value) {
             return $this->field->isRequired() ? 'url' : null;
         }
 
@@ -180,7 +181,7 @@ class SuperLinkFieldtype extends Fieldtype
         return $this->config('collections') ?? Blink::once('routable-collection-handles', function () {
             $site = Site::current()->handle();
 
-            return Facades\Collection::all()->reject(fn ($collection) => is_null($collection->route($site)))->map->handle()->values()->all();
+            return Facades\Collection::all()->reject(fn($collection) => is_null($collection->route($site)))->map->handle()->values()->all();
         });
     }
 
@@ -195,5 +196,10 @@ class SuperLinkFieldtype extends Fieldtype
     private function showAssetOption(): bool
     {
         return $this->config('container') !== null;
+    }
+
+    public function toGqlType()
+    {
+        return GraphQL::type('SuperLink');
     }
 }

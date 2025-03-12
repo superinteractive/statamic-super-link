@@ -3,3 +3,4 @@ vendor
 mix-manifest.json
 .DS_Store
 .vscode
+.idea
