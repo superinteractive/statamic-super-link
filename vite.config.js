@@ -6,18 +6,14 @@ import inject from '@rollup/plugin-inject';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/js/cp.js', 'resources/css/cp.css'],
-            publicDirectory: 'dist',
+            input: [
+                'resources/js/cp.js',
+                'resources/css/cp.css',
+            ],
+            refresh: true,
+            publicDirectory: 'resources/dist',
+            hotFile: 'resources/dist/hot',
         }),
-        // vue2(),
-        // {
-        //     name: 'fix-my-imports',
-        //     transform(code, id) {
-        //         if (id.endsWith('Uploader.vue')) {
-        //             return code.replace("import { Upload } from 'upload';", "import Upload from './Upload.vue';");
-        //         }
-        //     },
-        // },
         vue(),
         inject({
             Vue: 'vue',
