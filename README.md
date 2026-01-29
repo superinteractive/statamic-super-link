@@ -1,6 +1,6 @@
 <!-- statamic:hide -->
 
-![Statamic 4.0+](https://img.shields.io/badge/Statamic-4.0+-FF269E?style=flat-square&link=https://statamic.com)
+![Statamic 5.0+](https://img.shields.io/badge/Statamic-5.0+-FF269E?style=flat-square&link=https://statamic.com) ![Statamic 6.0+](https://img.shields.io/badge/Statamic-6.0+-FF269E?style=flat-square&link=https://statamic.com)
 
 ![superlink](./docs/superlink.jpg)
 
@@ -8,7 +8,7 @@
 
 # Super Link
 
-A fieldtype to create smarter links in Statamic 4+
+A fieldtype to create smarter links in Statamic 5 and 6.
 
 ## Features
 
@@ -16,6 +16,13 @@ A fieldtype to create smarter links in Statamic 4+
 - **Additional link types:** Enhance your links with phone and email options, in addition to Statamic's default types.
 - **Open in new tab:** Choose whether to open links in a new tab for an improved user experience.
 - **Seamless integration:** Simply add the Super Link fieldtype to your blueprints like any other link field.
+
+## Compatibility
+
+| Addon Version | Statamic Version | Laravel | PHP |
+|---------------| --- | --- | --- |
+| ^3.0.0        | 6.x | 12.x | 8.3+ |
+| ^2.0.0        | 5.x | 11.x | 8.2+ |
 
 ## Installation
 

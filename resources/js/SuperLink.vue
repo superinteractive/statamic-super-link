@@ -1,90 +1,75 @@
 <template>
-  <div class="super-link !flex !flex-col !items-start !gap-4 sm:!flex-row">
-    <!-- Link type selector -->
-    <div class="!w-full sm:!w-28">
-      <v-select
-          v-model="option"
-          append-to-body
-          :calculate-position="positionOptions"
-          :options="options"
-          :clearable="false"
-          :reduce="(o) => o.value"
-      >
-        <template #option="{ label }">
-          {{ __(label) }}
-        </template>
-      </v-select>
-    </div>
-
-    <div class="!shrink-1 !w-full !min-w-0 !flex-1 sm:!w-auto">
-      <div>
-        <!-- URL text input -->
-        <text-input
-            v-if="option === 'url'"
-            v-model="urlValue"
-            placeholder="https://example.com"
+  <div class="super-link">
+    <div class="!flex !flex-col !items-start !gap-4 sm:!flex-row">
+      <div class="!w-full sm:!w-28">
+        <Combobox
+            v-model="option"
+            :options="options"
+            option-label="label"
+            option-value="value"
+            :clearable="false"
+            :searchable="false"
         />
+      </div>
 
-        <!-- Mailto text input -->
-        <text-input
-            v-if="option === 'mailto'"
-            v-model="mailtoValue"
-            placeholder="email@example.com"
-        />
-
-        <!-- Tel text input -->
-        <text-input
-            v-if="option === 'tel'"
-            v-model="telValue"
-            placeholder="+1-555-123-4567"
-        />
-
-        <!-- Entry select -->
-        <relationship-fieldtype
-            v-if="option === 'entry'"
-            ref="entries"
-            handle="entry"
-            :value="selectedEntries"
-            :config="meta.entry.config"
-            :meta="meta.entry.meta"
-            @input="entriesSelected"
-            @meta-updated="meta.entry.meta = $event"
-            class="sm:-mt-0.5"
-        />
-
-        <!-- Asset select -->
-        <extended-assets-fieldtype
-            v-if="option === 'asset'"
-            ref="assets"
-            handle="asset"
-            :value="selectedAssets"
-            :config="meta.asset.config"
-            :meta="meta.asset.meta"
-            @input="assetsSelected"
-            @meta-updated="meta.asset.meta = $event"
-        />
-
-        <div class="!mt-2 !flex !items-center" v-if="option !== null">
-          <!-- "Open link in new tab" checkbox -->
-          <input
-              type="checkbox"
-              :id="`target_blank-${_uid}`"
-              v-model="targetBlankValue"
+      <div class="!shrink-1 !w-full !min-w-0 !flex-1 sm:!w-auto">
+        <div>
+          <Input
+              v-if="option === 'url'"
+              v-model="urlValue"
+              placeholder="https://example.com"
           />
-          <label :for="`target_blank-${_uid}`" class="ml-2 text-xs">
-            Open link in new tab
-          </label>
+
+          <Input
+              v-if="option === 'mailto'"
+              v-model="mailtoValue"
+              placeholder="email@example.com"
+          />
+
+          <Input
+              v-if="option === 'tel'"
+              v-model="telValue"
+              placeholder="+1-555-123-4567"
+          />
+
+          <relationship-fieldtype
+              v-if="option === 'entry'"
+              ref="entries"
+              handle="entry"
+              :value="selectedEntries"
+              :config="entryConfig"
+              :meta="entryMeta"
+              @update:value="entriesSelected"
+              @meta-updated="entryMetaUpdated"
+          />
+
+          <extended-assets-fieldtype
+              v-if="option === 'asset'"
+              ref="assets"
+              handle="asset"
+              :value="selectedAssets"
+              :config="assetConfig"
+              :meta="assetMeta"
+              @update:value="assetsSelected"
+              @meta-updated="assetMetaUpdated"
+          />
+
+          <div class="!mt-2 !flex !items-center" v-if="option !== null">
+            <Switch :id="`target_blank-${uid}`" v-model="targetBlankValue"/>
+            <label :for="`target_blank-${uid}`" class="ml-2 text-xs">
+              Open link in new tab
+            </label>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Link text field -->
-    <div class="!w-full !shrink-0 sm:!w-1/3">
-      <text-input
-          v-if="option !== null"
-          v-model="textValue"
-          placeholder="Enter Link Text"
-      />
+      <div class="!w-full !shrink-0 sm:!w-1/3">
+        <Input
+            v-if="option !== null"
+            v-model="textValue"
+            placeholder="Enter Link Text"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -93,228 +78,233 @@
 .super-link .relationship-input-empty {
   @apply flex min-h-10 items-center;
 }
+
 .super-link .relationship-input-empty svg {
   @apply shrink-0;
 }
+
 .super-link .relationship-input-empty .relationship-input-buttons {
   @apply flex min-h-10 w-full items-center;
 }
+
 .super-link .relationship-input-buttons button {
   @apply mb-0;
 }
+
 .super-link .relationship-input-buttons button > * {
   @apply shrink-0;
 }
+
 .super-link .asset-table-listing {
   @apply sm:-mt-1;
 }
 </style>
 
-<script>
-import PositionsSelectOptions from '../../vendor/statamic/cms/resources/js/mixins/PositionsSelectOptions';
+<script setup>
+import {computed, nextTick, ref, watch} from 'vue';
+import {Fieldtype} from '@statamic/cms';
+import {Combobox, Input, Switch} from '@statamic/cms/ui';
 import ExtendedAssetsFieldtype from './ExtendedAssetsFieldtype.vue';
 
-/**
- * This component follows the same "update meta on each local change" approach
- * as Statamic's built-in Link field. The difference is:
- *   - we call `this.update(...)` with an OBJECT { url, text, target_blank }
- *     instead of a single string.
- *
- * That way, your final saved data is an object, not just a URL string.
- */
-export default {
-  mixins: [Fieldtype, PositionsSelectOptions],
+const emit = defineEmits(Fieldtype.emits);
+const props = defineProps(Fieldtype.props);
+const {expose, update, updateDebounced, updateMeta} = Fieldtype.use(emit, props);
 
-  components: {
-    ExtendedAssetsFieldtype,
-  },
+defineExpose(expose);
 
-  data() {
-    return {
-      // Starting from meta (like the core Link field)
-      option: this.meta.initialOption,
-      urlValue: this.meta.initialUrl,
-      mailtoValue: this.meta.initialMailto,
-      telValue: this.meta.initialTel,
-      selectedEntries: this.meta.initialSelectedEntries,
-      selectedAssets: this.meta.initialSelectedAssets,
-      textValue: this.meta.initialText,
-      targetBlankValue: this.meta.initialTargetBlank,
+const uid = `super-link-${Math.random().toString(36).slice(2)}`;
 
-      metaChanging: false,
+const metaChanging = ref(false);
 
-      options: this.initialOptions(),
-    };
-  },
+const option = ref(props.meta?.initialOption ?? null);
+const urlValue = ref(props.meta?.initialUrl ?? null);
+const mailtoValue = ref(props.meta?.initialMailto ?? null);
+const telValue = ref(props.meta?.initialTel ?? null);
+const selectedEntries = ref(props.meta?.initialSelectedEntries ?? []);
+const selectedAssets = ref(props.meta?.initialSelectedAssets ?? []);
+const textValue = ref(props.meta?.initialText ?? null);
+const targetBlankValue = ref(props.meta?.initialTargetBlank ?? false);
 
-  computed: {
-    /**
-     * A single "composite" object with { url, text, target_blank }.
-     * We'll pass this to `this.update(...)`.
-     */
-    linkValue() {
-      let url = null;
+const entries = ref(null);
+const assets = ref(null);
 
-      if (this.option === 'url') {
-        url = this.urlValue;
-      } else if (this.option === 'mailto') {
-        url = 'mailto:' + this.mailtoValue;
-      } else if (this.option === 'tel') {
-        url = 'tel:' + this.telValue;
-      } else if (this.option === 'entry') {
-        url = this.selectedEntries.length
-            ? `entry::${this.selectedEntries[0]}`
-            : null;
-      } else if (this.option === 'asset') {
-        url = this.selectedAssets.length
-            ? `asset::${this.selectedAssets[0]}`
-            : null;
-      } else if (this.option === 'first-child') {
-        url = '@child';
-      }
+const meta = computed(() => props.meta ?? {});
+const config = computed(() => props.config ?? {});
+const entryConfig = computed(() => meta.value.entry?.config ?? {});
+const assetConfig = computed(() => meta.value.asset?.config ?? {});
+const entryMeta = ref(meta.value.entry?.meta ?? {});
+const assetMeta = ref(meta.value.asset?.meta ?? {});
 
-      return {
-        url,
-        text: this.textValue,
-        target_blank: this.targetBlankValue,
-      };
+const buildMeta = (overrides) => {
+  const next = {...meta.value, ...overrides};
+
+  if (meta.value.entry) {
+    next.entry = {...meta.value.entry, meta: entryMeta.value};
+  }
+  if (meta.value.asset) {
+    next.asset = {...meta.value.asset, meta: assetMeta.value};
+  }
+
+  return next;
+};
+
+const options = computed(() => {
+  return [
+    config.value.required ? null : {label: __('None'), value: null},
+    {label: __('URL'), value: 'url'},
+    meta.value.showFirstChildOption
+        ? {label: __('First Child'), value: 'first-child'}
+        : null,
+    {label: __('Entry'), value: 'entry'},
+    meta.value.showAssetOption ? {label: __('Asset'), value: 'asset'} : null,
+    {label: __('Email'), value: 'mailto'},
+    {label: __('Phone'), value: 'tel'},
+  ].filter(Boolean);
+});
+
+const linkValue = computed(() => {
+  let url = null;
+
+  if (option.value === 'url') {
+    url = urlValue.value;
+  } else if (option.value === 'mailto') {
+    url = `mailto:${mailtoValue.value}`;
+  } else if (option.value === 'tel') {
+    url = `tel:${telValue.value}`;
+  } else if (option.value === 'entry') {
+    url = selectedEntries.value.length
+        ? `entry::${selectedEntries.value[0]}`
+        : null;
+  } else if (option.value === 'asset') {
+    url = selectedAssets.value.length
+        ? `asset::${selectedAssets.value[0]}`
+        : null;
+  } else if (option.value === 'first-child') {
+    url = '@child';
+  }
+
+  return {
+    url,
+    text: textValue.value,
+    target_blank: targetBlankValue.value,
+  };
+});
+
+watch(option, (newVal) => {
+  if (metaChanging.value) return;
+
+  if (newVal === null) {
+    update(null);
+  } else {
+    updateDebounced(linkValue.value);
+
+    if (newVal === 'entry' && !selectedEntries.value.length) {
+      nextTick(() => entries.value?.linkExistingItem());
+    }
+    if (newVal === 'asset' && !selectedAssets.value.length) {
+      nextTick(() => assets.value?.openSelector());
+    }
+  }
+
+  updateMeta(buildMeta({initialOption: newVal}));
+});
+
+watch(urlValue, (newVal) => {
+  if (metaChanging.value) return;
+  updateDebounced(linkValue.value);
+  updateMeta(buildMeta({initialUrl: newVal}));
+});
+
+watch(mailtoValue, (newVal) => {
+  if (metaChanging.value) return;
+  updateDebounced(linkValue.value);
+  updateMeta(buildMeta({initialMailto: newVal}));
+});
+
+watch(telValue, (newVal) => {
+  if (metaChanging.value) return;
+  updateDebounced(linkValue.value);
+  updateMeta(buildMeta({initialTel: newVal}));
+});
+
+watch(textValue, (newVal) => {
+  if (metaChanging.value) return;
+  update(linkValue.value);
+  updateMeta(buildMeta({initialText: newVal}));
+});
+
+watch(targetBlankValue, (newVal) => {
+  if (metaChanging.value) return;
+  update(linkValue.value);
+  updateMeta(buildMeta({initialTargetBlank: newVal}));
+});
+
+watch(selectedEntries, (newVal) => {
+  if (metaChanging.value) return;
+  update(linkValue.value);
+  updateMeta(buildMeta({initialSelectedEntries: newVal}));
+});
+
+watch(selectedAssets, (newVal) => {
+  if (metaChanging.value) return;
+  update(linkValue.value);
+  updateMeta(buildMeta({initialSelectedAssets: newVal}));
+});
+
+watch(
+    () => props.meta,
+    (newMeta, oldMeta) => {
+      if (!newMeta || newMeta === oldMeta) return;
+
+      metaChanging.value = true;
+
+      option.value = newMeta.initialOption;
+      urlValue.value = newMeta.initialUrl;
+      mailtoValue.value = newMeta.initialMailto;
+      telValue.value = newMeta.initialTel;
+      textValue.value = newMeta.initialText;
+      targetBlankValue.value = newMeta.initialTargetBlank;
+      selectedEntries.value = newMeta.initialSelectedEntries;
+      selectedAssets.value = newMeta.initialSelectedAssets;
+      entryMeta.value = newMeta.entry?.meta ?? {};
+      assetMeta.value = newMeta.asset?.meta ?? {};
+
+      nextTick(() => {
+        metaChanging.value = false;
+      });
     },
-  },
+    {deep: true}
+);
 
-  watch: {
-    /**
-     * 1) Watch changes to "option" and update the store as an OBJECT.
-     *    Also mirror them to meta (so that unsaved changes persist
-     *    if a Replicator refresh re-initializes this field).
-     */
-    option(newVal, oldVal) {
-      if (this.metaChanging) return;
+const entryMetaUpdated = (newMeta) => {
+  entryMeta.value = newMeta;
+  updateMeta(
+      buildMeta({
+        entry: {
+          ...(meta.value.entry ?? {}),
+          meta: newMeta,
+        },
+      })
+  );
+};
 
-      if (newVal === null) {
-        this.update(null);
-      } else {
-        // For typed fields, we do a "debounced" approach so we don't
-        // update the store on every keystroke. If you prefer immediate,
-        // you can do `this.update(this.linkValue)` instead.
-        this.updateDebounced(this.linkValue);
+const assetMetaUpdated = (newMeta) => {
+  assetMeta.value = newMeta;
+  updateMeta(
+      buildMeta({
+        asset: {
+          ...(meta.value.asset ?? {}),
+          meta: newMeta,
+        },
+      })
+  );
+};
 
-        // Auto-open pickers if switching to entry/asset with none selected
-        if (newVal === 'entry' && !this.selectedEntries.length) {
-          this.$nextTick(() => this.$refs.entries.linkExistingItem());
-        }
-        if (newVal === 'asset' && !this.selectedAssets.length) {
-          this.$nextTick(() => this.$refs.assets.openSelector());
-        }
-      }
+const entriesSelected = (entriesList) => {
+  selectedEntries.value = entriesList;
+};
 
-      // Mirror the new selected "option" back to meta
-      this.updateMeta({ ...this.meta, initialOption: newVal });
-    },
-
-    /**
-     * 2) Watch each local property and update:
-     *    - the store with the FULL object
-     *    - the meta with the new "initial" value
-     */
-    urlValue(newVal) {
-      if (this.metaChanging) return;
-      this.updateDebounced(this.linkValue);
-      this.updateMeta({ ...this.meta, initialUrl: newVal });
-    },
-    mailtoValue(newVal) {
-      if (this.metaChanging) return;
-      this.updateDebounced(this.linkValue);
-      this.updateMeta({ ...this.meta, initialMailto: newVal });
-    },
-    telValue(newVal) {
-      if (this.metaChanging) return;
-      this.updateDebounced(this.linkValue);
-      this.updateMeta({ ...this.meta, initialTel: newVal });
-    },
-    textValue(newVal) {
-      if (this.metaChanging) return;
-      // If you like, you could do "debounced" for text as well:
-      this.update(this.linkValue);
-      this.updateMeta({ ...this.meta, initialText: newVal });
-    },
-    targetBlankValue(newVal) {
-      if (this.metaChanging) return;
-      this.update(this.linkValue);
-      this.updateMeta({ ...this.meta, initialTargetBlank: newVal });
-    },
-
-    /**
-     * 3) Whenever selected entries/assets changes, do the same approach.
-     */
-    selectedEntries(newVal) {
-      if (this.metaChanging) return;
-      this.update(this.linkValue);
-      this.updateMeta({ ...this.meta, initialSelectedEntries: newVal });
-    },
-    selectedAssets(newVal) {
-      if (this.metaChanging) return;
-      this.update(this.linkValue);
-      this.updateMeta({ ...this.meta, initialSelectedAssets: newVal });
-    },
-
-    /**
-     * 4) If the meta changes from outside (e.g. a blueprint refresh in
-     *    a nested Replicator), set `metaChanging=true`, reinitialize from meta,
-     *    then turn off the flag.
-     */
-    meta: {
-      deep: true,
-      handler(newMeta, oldMeta) {
-        if (JSON.stringify(newMeta) === JSON.stringify(oldMeta)) return;
-
-        this.metaChanging = true;
-
-        // Re-initialize local data from meta
-        this.option = newMeta.initialOption;
-        this.urlValue = newMeta.initialUrl;
-        this.mailtoValue = newMeta.initialMailto;
-        this.telValue = newMeta.initialTel;
-        this.textValue = newMeta.initialText;
-        this.targetBlankValue = newMeta.initialTargetBlank;
-        this.selectedEntries = newMeta.initialSelectedEntries;
-        this.selectedAssets = newMeta.initialSelectedAssets;
-
-        this.$nextTick(() => (this.metaChanging = false));
-      },
-    },
-  },
-
-  methods: {
-    initialOptions() {
-      return [
-        this.config.required ? null : { label: __('None'), value: null },
-        { label: __('URL'), value: 'url' },
-        this.meta.showFirstChildOption
-            ? { label: __('First Child'), value: 'first-child' }
-            : null,
-        { label: __('Entry'), value: 'entry' },
-        this.meta.showAssetOption
-            ? { label: __('Asset'), value: 'asset' }
-            : null,
-        // If you want mailto/tel in the dropdown, include them:
-        { label: __('Email'), value: 'mailto' },
-        { label: __('Phone'), value: 'tel' },
-      ].filter(Boolean);
-    },
-
-    /**
-     * Called by <relationship-fieldtype> whenever user picks entries.
-     */
-    entriesSelected(entries) {
-      this.selectedEntries = entries;
-    },
-
-    /**
-     * Called by <extended-assets-fieldtype> whenever user picks assets.
-     */
-    assetsSelected(assets) {
-      this.selectedAssets = assets;
-    },
-  },
+const assetsSelected = (assetsList) => {
+  selectedAssets.value = assetsList;
 };
 </script>

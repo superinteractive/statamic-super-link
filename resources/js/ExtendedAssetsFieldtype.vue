@@ -1,17 +1,16 @@
 <script>
-    import AssetsFieldType from '../../vendor/statamic/cms/resources/js/components/fieldtypes/assets/AssetsFieldtype.vue';
+const AssetsFieldtype = Statamic.$components.get('assets-fieldtype');
 
-    export default {
-        extends: AssetsFieldType,
+export default {
+  extends: AssetsFieldtype,
 
-        computed: {
-            isInLinkField() {
-                // Your custom logic here
-                return true; // or whatever you need it to be
-            },
-            showSetAlt() {
-                return false;
-            },
-        },
-    };
+  computed: {
+    isInLinkField() {
+      return true;
+    },
+    showSetAlt() {
+      return false;
+    },
+  },
+};
 </script>
