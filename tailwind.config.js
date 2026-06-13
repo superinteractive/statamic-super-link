@@ -1,6 +1,11 @@
 module.exports = {
+    darkMode: 'class',
     important: '.super-link',
-    content: ['./resources/**/*.vue', './resources/**/*.js', './resources/**/*.css'],
+    content: [
+        './resources/js/**/*.vue',
+        './resources/js/**/*.js',
+        './resources/css/**/*.css',
+    ],
     theme: {
         extend: {},
     },

@@ -164,6 +164,7 @@ class SuperLinkFieldtype extends Fieldtype
             'type' => 'assets',
             'max_files' => 1,
             'mode' => 'list',
+            'show_set_alt' => false,
         ]));
 
         $assetField->setValue($value);

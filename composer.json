@@ -1,6 +1,6 @@
 {
 	"name": "superinteractive/statamic-super-link",
-    "version": "3.0.0",
+    "description": "Super Link Fieldtype for Statamic.",
 	"autoload": {
 		"psr-4": {
 			"SuperInteractive\\SuperLink\\": "src"

@@ -1,5 +1,5 @@
 <template>
-  <div class="super-link">
+  <div class="super-link link-fieldtype">
     <div class="!flex !flex-col !items-start !gap-4 sm:!flex-row">
       <div class="!w-full sm:!w-28">
         <Combobox
@@ -40,10 +40,10 @@
               :config="entryConfig"
               :meta="entryMeta"
               @update:value="entriesSelected"
-              @meta-updated="entryMetaUpdated"
+              @update:meta="entryMetaUpdated"
           />
 
-          <extended-assets-fieldtype
+          <assets-fieldtype
               v-if="option === 'asset'"
               ref="assets"
               handle="asset"
@@ -51,12 +51,12 @@
               :config="assetConfig"
               :meta="assetMeta"
               @update:value="assetsSelected"
-              @meta-updated="assetMetaUpdated"
+              @update:meta="assetMetaUpdated"
           />
 
           <div class="!mt-2 !flex !items-center" v-if="option !== null">
             <Switch :id="`target_blank-${uid}`" v-model="targetBlankValue"/>
-            <label :for="`target_blank-${uid}`" class="ml-2 text-xs">
+            <label :for="`target_blank-${uid}`" class="ms-2 text-xs text-gray-700 dark:text-gray-200">
               Open link in new tab
             </label>
           </div>
@@ -94,21 +94,18 @@
 .super-link .relationship-input-buttons button > * {
   @apply shrink-0;
 }
-
-.super-link .asset-table-listing {
-  @apply sm:-mt-1;
-}
 </style>
 
 <script setup>
-import {computed, nextTick, ref, watch} from 'vue';
+import {computed, nextTick, provide, ref, watch} from 'vue';
 import {Fieldtype} from '@statamic/cms';
 import {Combobox, Input, Switch} from '@statamic/cms/ui';
-import ExtendedAssetsFieldtype from './ExtendedAssetsFieldtype.vue';
 
 const emit = defineEmits(Fieldtype.emits);
 const props = defineProps(Fieldtype.props);
 const {expose, update, updateDebounced, updateMeta} = Fieldtype.use(emit, props);
+
+provide('isInLinkField', true);
 
 defineExpose(expose);
 

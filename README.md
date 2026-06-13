@@ -21,6 +21,7 @@ A fieldtype to create smarter links in Statamic 5 and 6.
 
 | Addon Version | Statamic Version | Laravel | PHP |
 |---------------| --- | --- | --- |
+| ^3.1.0        | 6.x | 12.x | 8.3+ |
 | ^3.0.0        | 6.x | 12.x | 8.3+ |
 | ^2.0.0        | 5.x | 11.x | 8.2+ |
 
